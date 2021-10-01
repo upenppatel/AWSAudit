@@ -5,7 +5,10 @@ $PORT = 1234
 Set-AWSProxy -Hostname localhost -Port $PORT -Credential ([System.Net.CredentialCache]::DefaultCredentials)
 
 
+
+
 Import-Module -Name ImportExcel
+
 
 # https://aws-cli-eq-pwsh.shibata.tech/organizations/
 #
@@ -21,20 +24,28 @@ $FileName = "C:\TEMP\Master-OU-SCP-Audit-$($D).xlsx"
     
 $Date = (Get-Date -UFormat "%B-%d-%Y|%T")
 
+
 Set-AWSCredential -ProfileName 123456789012:role/SecurityAuditor
+
 
 $AWSName = Get-IAMAccountAlias
 
+
 Set-DefaultAWSRegion -Region us-east-1
+
 
 $Region = (Get-DefaultAWSRegion).Region 
 
+
 #--------------------------------------------------------------------------
+
 
 try{Get-ORGOrganization}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 
+
 catch[system.exception]{Write-Output"Error:" $_.Exception.Message |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
+
 
 # Retrieves information about the organization that the user's account belongs to. 
 # This operation can be called from any account in the organization.
@@ -56,15 +67,19 @@ Get-ORGOrganization |
     $ORGOrganizationOUT | Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'Master' 
             } #  ForEach-Object {
 
+
 try{Get-ORGRoot}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 # Lists the roots that are defined in the current organization.
 
+
 $Root = Get-ORGRoot  
-# r-mhfd
+# 
+
 
 $RootOUId = $Root.Id
 $RootOUId
+
 
 $OURoot = New-Object -TypeName System.Management.Automation.PSObject -Property ([ordered]@{
    Date     = (Get-Date -UFormat "%B-%d-%Y|%T")
@@ -75,17 +90,23 @@ $OURoot = New-Object -TypeName System.Management.Automation.PSObject -Property (
    Arn        = $Root.Arn
    })
 
+
 $OURoot |Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'ROOT' 
 
+
 #-------------------------------------------------------------------------------
+
 
 $RootId = (Get-ORGRoot).ID
 $RootId 
 
 
+
+
 try{$ChildOUs = Get-ORGOrganizationalUnitList -ParentId $RootId}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 $ChildOUs
+
 
 Get-ORGOrganizationalUnitList -ParentId $RootId |          
     ForEach-Object { 
@@ -101,9 +122,11 @@ Get-ORGOrganizationalUnitList -ParentId $RootId |
     $ORGOrganizationalUnitListOUT | Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'ChildOU' 
     } #  ForEach-Object {
 
+
 # ----------------------------------------------------------------------------
 try{$ChildOUs = Get-ORGOrganizationalUnitList -ParentId $RootId}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
+
 
 foreach( $ChildOUId in $ChildOUIds) {
 Get-ORGAccountForParent -ParentId $ChildOUId | 
@@ -126,16 +149,20 @@ Get-ORGAccountForParent -ParentId $ChildOUId |
     } # ForEach-Object 
 }
 
+
 # --------------------------------------------------------------------------------------
+
 
 # Calls the AWS Organizations ListAWSServiceAccessForOrganization API operation.
 # Returns a list of the AWS services that you enabled to integrate with your organization. # After a service on this list creates the resources that it requires for the integration, 
 # it can perform operations on your organization and its accounts. # For more information about integrating other services with AWS Organizations, including the list of services that currently work with Organizations, 
 # see Integrating AWS Organizations with Other AWS Services in the AWS Organizations User Guide. This operation can be called only from the organization's master account. 
 
+
 # Get-ORGAWSServiceAccessForOrganization
 try{Get-ORGAWSServiceAccessForOrganization}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
+
 
 Get-ORGAWSServiceAccessForOrganization | 
     ForEach-Object { 
@@ -150,7 +177,9 @@ Get-ORGAWSServiceAccessForOrganization |
     $ORGAWSServiceAccessForOrganizationOUT | Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'ServiceAccess' 
             } #  ForEach-Object {
 
+
 # --------------------------------------------------------------------
+
 
 # GeRetrieves the list of all policies in an organization of a specified type. 
 # Always check the NextToken response parameter for a null value when calling a List* operation. 
@@ -159,8 +188,10 @@ Get-ORGAWSServiceAccessForOrganization |
 # This operation can be called only from the organization's master account. t-ORGPolicyList -Filter SERVICE_CONTROL_POLICY   
 # Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY
 
+
 try{Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
+
 
 Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY | 
     ForEach-Object { 
@@ -179,15 +210,20 @@ Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY |
     $SERVICE_CONTROL_POLICYOUT | Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'SCPOLICY' 
      } #  ForEach-Object {
 
+
 #--------------------------------------------------------------------------
 
+
 (Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY).ID
+
 
 $SCPIds = (Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY).ID
 try{$SCPIds = (Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY).ID}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 
+
 $SCPIds
+
 
 foreach($I in $SCPIds)  {
   
@@ -206,14 +242,19 @@ foreach($I in $SCPIds)  {
     $ORGTargetForPolicyOUT | Export-Excel $FileName -AutoSize -AutoFilter -Append -WorksheetName 'ORGTargetPolicy'
     } #  ForEach-Object {
 
+
     }
 
+
 # ---------------------------------------------------------------
+
 
 try{$SCPIds = (Get-ORGPolicyList -Filter SERVICE_CONTROL_POLICY).ID}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 
+
 $SCPIds
+
 
 foreach($I in $SCPIds)  {
   
@@ -221,8 +262,10 @@ foreach($I in $SCPIds)  {
    $Content.Content
    $Content.PolicySummary
 
+
    $Contentjson = $Content.Content
    $ContentObj = ConvertFrom-Json -InputObject $Contentjson 
+
 
    Get-ORGPolicy -PolicyId $I | 
    ForEach-Object {
@@ -250,11 +293,14 @@ foreach($I in $SCPIds)  {
 }
 # --------------------------------------------------------
 
+
 $RootId = (Get-ORGRoot).ID
 $RootId 
 
+
 try{Get-ORGPolicyForTarget -TargetId  $RootId  -Filter SERVICE_CONTROL_POLICY}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
+
 
 Get-ORGPolicyForTarget -TargetId  r-mhfd -Filter SERVICE_CONTROL_POLICY | 
 ForEach-Object {
@@ -276,17 +322,24 @@ ForEach-Object {
    } #  ForEach-Object {
 
 
+
+
 #-----------------------------------------------------
+
 
 try{$ChildOUIds = (Get-ORGOrganizationalUnitList -ParentId $RootId).Id}
 catch{" $_.Exception.Message" |Export-Excel $FileName -AutoSize -Append -WorksheetName 'ERROR'}
 
 
+
+
 foreach( $ChildOUId in $ChildOUIds) {
+
 
    $NameOfOU = (Get-ORGOrganizationalUnit -OrganizationalUnitId $ChildOUId).Name
    
    $NameOfOU
+
 
    Get-ORGPolicyForTarget -TargetId $ChildOUId -Filter SERVICE_CONTROL_POLICY |
    ForEach-Object {
@@ -306,5 +359,6 @@ foreach( $ChildOUId in $ChildOUIds) {
    $ORGPolicyForTargetOUT = $ORGPolicyForTarget    
    $ORGPolicyForTargetOUT | Export-Excel $FileName -AutoSize -Append -WorksheetName 'ORGPolicyForTarget' 
    } #  ForEach-Object {
+
 
    }
